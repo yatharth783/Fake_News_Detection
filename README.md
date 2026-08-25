@@ -67,5 +67,4 @@ Confidence Score
 
 
 ## 🚀 Live Demo
-
-[Click here to use the Fake News Detection App](https://fakenewsdetection-nsxsg6xavfqjcdazkhiwne.streamlit.app/)
+[Click here to use the Fake News Detection App](https://fakenewsdetection-nsxsg6xavf.streamlit.app)
