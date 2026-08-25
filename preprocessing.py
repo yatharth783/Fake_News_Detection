@@ -5,49 +5,136 @@ import nltk
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
-# Download NLTK stopwords
+
+# =========================================================
+# NLTK STOPWORDS
+# =========================================================
+
 try:
-    stop_words = set(stopwords.words('english'))
+    stop_words = set(stopwords.words("english"))
+
 except LookupError:
-    nltk.download('stopwords')
-    stop_words = set(stopwords.words('english'))
+    nltk.download("stopwords", quiet=True)
+    stop_words = set(stopwords.words("english"))
+
+
+# =========================================================
+# STEMMER
+# =========================================================
 
 ps = PorterStemmer()
 
 
+# =========================================================
+# TEXT PREPROCESSING FUNCTION
+# =========================================================
+
 def clean_text(text):
     """
-    Complete text preprocessing pipeline.
+    Cleans and preprocesses news text before
+    sending it to the machine learning model.
+
+    Steps:
+    1. Validate input
+    2. Convert to lowercase
+    3. Remove URLs
+    4. Remove punctuation
+    5. Remove numbers
+    6. Remove stopwords
+    7. Apply stemming
+    8. Remove extra spaces
     """
+
+    # -----------------------------------------------------
+    # 1. Validate input
+    # -----------------------------------------------------
 
     if not isinstance(text, str):
         return ""
 
-    # 1. Lowercase
+    if not text.strip():
+        return ""
+
+
+    # -----------------------------------------------------
+    # 2. Convert to lowercase
+    # -----------------------------------------------------
+
     text = text.lower()
 
-    # 2. Remove URLs
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text)
 
-    # 3. Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
+    # -----------------------------------------------------
+    # 3. Remove URLs
+    # -----------------------------------------------------
 
-    # 4. Remove numbers
-    text = re.sub(r'\d+', '', text)
+    text = re.sub(
+        r"https?://\S+|www\.\S+",
+        "",
+        text
+    )
 
-    # 5. Tokenize
+
+    # -----------------------------------------------------
+    # 4. Remove punctuation
+    # -----------------------------------------------------
+
+    text = text.translate(
+        str.maketrans("", "", string.punctuation)
+    )
+
+
+    # -----------------------------------------------------
+    # 5. Remove numbers
+    # -----------------------------------------------------
+
+    text = re.sub(
+        r"\d+",
+        "",
+        text
+    )
+
+
+    # -----------------------------------------------------
+    # 6. Split into words
+    # -----------------------------------------------------
+
     words = text.split()
 
-    # 6. Remove stopwords
+
+    # -----------------------------------------------------
+    # 7. Remove stopwords
+    # -----------------------------------------------------
+
     words = [
-        word for word in words
+        word
+        for word in words
         if word not in stop_words
     ]
 
-    # 7. Stemming
+
+    # -----------------------------------------------------
+    # 8. Apply stemming
+    # -----------------------------------------------------
+
     words = [
         ps.stem(word)
         for word in words
     ]
 
-    return " ".join(words)
+
+    # -----------------------------------------------------
+    # 9. Remove empty values
+    # -----------------------------------------------------
+
+    words = [
+        word
+        for word in words
+        if word.strip()
+    ]
+
+
+    # -----------------------------------------------------
+    # 10. Return cleaned text
+    # -----------------------------------------------------
+
+    return " ".join(words).strip()
