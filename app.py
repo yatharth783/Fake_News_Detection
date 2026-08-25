@@ -7,7 +7,10 @@ from preprocessing import clean_text
 # LOAD MODEL
 # =========================================================
 
+import joblib
 model = joblib.load("models/fake_news_model.pkl")
+print(type(model))
+print(hasattr(model, "predict_proba"))
 
 
 # =========================================================

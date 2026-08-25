@@ -21,8 +21,6 @@ from sklearn.metrics import (
 
 from sklearn.pipeline import Pipeline
 
-from preprocessing import clean_text
-
 
 def train_system():
 
@@ -33,7 +31,6 @@ def train_system():
     os.makedirs("models", exist_ok=True)
     os.makedirs("notebooks", exist_ok=True)
 
-
     # =====================================================
     # 2. FILE PATHS
     # =====================================================
@@ -43,28 +40,55 @@ def train_system():
 
     print("Loading dataset...")
 
+    # =====================================================
+    # 3. CHECK FILES
+    # =====================================================
+
+    if not os.path.exists(true_path):
+        print("ERROR: data/True.csv not found!")
+        return
+
+    if not os.path.exists(fake_path):
+        print("ERROR: data/Fake.csv not found!")
+        return
 
     # =====================================================
-    # 3. LOAD DATASET
+    # 4. LOAD DATASET
     # =====================================================
 
-    true_df = pd.read_csv(
+    try:
+        true_df = pd.read_csv(
         true_path,
         sep="\t",
+        encoding="latin1",
         engine="python",
         on_bad_lines="skip"
     )
 
-    fake_df = pd.read_csv(
+        fake_df = pd.read_csv(
         fake_path,
         sep="\t",
+        encoding="latin1",
         engine="python",
         on_bad_lines="skip"
     )
 
+    except UnicodeDecodeError:
+
+        print("UTF-8 failed. Trying latin1...")
+
+        true_df = pd.read_csv(
+            true_path,
+            encoding="latin1"
+        )
+
+        fake_df = pd.read_csv(
+            fake_path,
+            encoding="latin1"
+        )
 
     # =====================================================
-    # 4. CLEAN COLUMN NAMES
+    # 5. CLEAN COLUMN NAMES
     # =====================================================
 
     true_df.columns = (
@@ -85,17 +109,27 @@ def train_system():
     print("\nFake.csv columns:")
     print(fake_df.columns.tolist())
 
+    # =====================================================
+    # 6. CHECK REQUIRED COLUMNS
+    # =====================================================
+
+    if "text" not in true_df.columns and "title" not in true_df.columns:
+        print("\nERROR: True.csv does not contain title/text columns.")
+        return
+
+    if "text" not in fake_df.columns and "title" not in fake_df.columns:
+        print("\nERROR: Fake.csv does not contain title/text columns.")
+        return
 
     # =====================================================
-    # 5. ADD LABELS
+    # 7. ADD LABELS
     # =====================================================
 
     true_df["label"] = "REAL"
     fake_df["label"] = "FAKE"
 
-
     # =====================================================
-    # 6. COMBINE DATA
+    # 8. COMBINE DATA
     # =====================================================
 
     df = pd.concat(
@@ -105,9 +139,8 @@ def train_system():
 
     print("\nDataset Size:", df.shape)
 
-
     # =====================================================
-    # 7. CREATE CONTENT
+    # 9. CREATE CONTENT
     # =====================================================
 
     if "title" in df.columns and "text" in df.columns:
@@ -126,7 +159,7 @@ def train_system():
             .astype(str)
         )
 
-    elif "title" in df.columns:
+    else:
 
         df["content"] = (
             df["title"]
@@ -134,20 +167,8 @@ def train_system():
             .astype(str)
         )
 
-    else:
-
-        print("\nERROR: title/text columns not found.")
-
-        print(
-            "Available columns:",
-            df.columns.tolist()
-        )
-
-        return
-
-
     # =====================================================
-    # 8. REMOVE EMPTY ARTICLES
+    # 10. REMOVE EMPTY ARTICLES
     # =====================================================
 
     df = df[
@@ -156,25 +177,16 @@ def train_system():
 
     print("\nFinal Dataset Size:", df.shape)
 
-
     # =====================================================
-    # 9. CLASS DISTRIBUTION
+    # 11. CLASS DISTRIBUTION
     # =====================================================
 
     print("\nClass Distribution:")
+    print(df["label"].value_counts())
 
-    print(
-        df["label"].value_counts()
-    )
+    df["label"].value_counts().plot(kind="bar")
 
-    df["label"].value_counts().plot(
-        kind="bar"
-    )
-
-    plt.title(
-        "Real vs Fake News Distribution"
-    )
-
+    plt.title("Real vs Fake News Distribution")
     plt.xlabel("News Type")
     plt.ylabel("Number of Articles")
 
@@ -186,29 +198,21 @@ def train_system():
 
     plt.close()
 
-
     # =====================================================
-    # 10. PREPROCESSING
+    # 12. FEATURES AND LABEL
     # =====================================================
 
-    print("\nPreprocessing text...")
-
-    df["cleaned_content"] = (
-        df["content"].apply(clean_text)
-    )
-
-    X = df["cleaned_content"]
+    X = df["content"]
     y = df["label"]
 
-
     # =====================================================
-    # 11. TRAIN TEST SPLIT
+    # 13. TRAIN TEST SPLIT
     # =====================================================
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
-        test_size=0.2,
+        test_size=0.20,
         random_state=42,
         stratify=y
     )
@@ -223,9 +227,8 @@ def train_system():
         len(X_test)
     )
 
-
     # =====================================================
-    # 12. MODELS
+    # 14. MODELS
     # =====================================================
 
     models = {
@@ -246,9 +249,8 @@ def train_system():
             )
     }
 
-
     # =====================================================
-    # 13. BEST MODEL VARIABLES
+    # 15. BEST MODEL VARIABLES
     # =====================================================
 
     best_model = None
@@ -257,9 +259,8 @@ def train_system():
 
     best_metrics = {}
 
-
     # =====================================================
-    # 14. TRAIN MODELS
+    # 16. TRAIN MODELS
     # =====================================================
 
     for name, classifier in models.items():
@@ -267,11 +268,6 @@ def train_system():
         print("\n" + "=" * 60)
         print("Model:", name)
         print("=" * 60)
-
-
-        # -------------------------------------------------
-        # Pipeline
-        # -------------------------------------------------
 
         pipeline = Pipeline([
 
@@ -281,7 +277,8 @@ def train_system():
                 TfidfVectorizer(
                     max_features=50000,
                     ngram_range=(1, 2),
-                    sublinear_tf=True
+                    sublinear_tf=True,
+                    stop_words="english"
                 )
             ),
 
@@ -291,29 +288,24 @@ def train_system():
             )
         ])
 
-
-        # -------------------------------------------------
-        # Train
-        # -------------------------------------------------
+        print("Training...")
 
         pipeline.fit(
             X_train,
             y_train
         )
 
-
-        # -------------------------------------------------
-        # Prediction
-        # -------------------------------------------------
+        # =================================================
+        # PREDICTION
+        # =================================================
 
         y_pred = pipeline.predict(
             X_test
         )
 
-
-        # -------------------------------------------------
-        # Metrics
-        # -------------------------------------------------
+        # =================================================
+        # METRICS
+        # =================================================
 
         accuracy = accuracy_score(
             y_test,
@@ -338,10 +330,7 @@ def train_system():
             pos_label="FAKE"
         )
 
-
-        # -------------------------------------------------
-        # Classification Report
-        # -------------------------------------------------
+        print("\nClassification Report:")
 
         print(
             classification_report(
@@ -349,11 +338,6 @@ def train_system():
                 y_pred
             )
         )
-
-
-        # -------------------------------------------------
-        # Print Metrics
-        # -------------------------------------------------
 
         print(
             f"Accuracy : {accuracy:.4f}"
@@ -371,10 +355,9 @@ def train_system():
             f"F1 Score : {f1:.4f}"
         )
 
-
-        # -------------------------------------------------
-        # Select Best Model
-        # -------------------------------------------------
+        # =================================================
+        # SELECT BEST MODEL
+        # =================================================
 
         if f1 > best_score:
 
@@ -391,15 +374,14 @@ def train_system():
                 "f1": f1
             }
 
-
     # =====================================================
-    # 15. FINAL RESULT
+    # 17. FINAL RESULT
     # =====================================================
 
     print("\n" + "=" * 60)
 
     print(
-        f"🏆 Best Model: {best_name}"
+        f"BEST MODEL: {best_name}"
     )
 
     print(
@@ -420,31 +402,57 @@ def train_system():
 
     print("=" * 60)
 
-
     # =====================================================
-    # 16. SAVE BEST MODEL
+    # 18. SAVE MODEL
     # =====================================================
 
-    model_path = (
-        "models/fake_news_model.pkl"
-    )
+    model_path = "models/fake_news_model.pkl"
 
     joblib.dump(
         best_model,
         model_path
     )
 
+    print("\nMODEL SAVED SUCCESSFULLY!")
+
     print(
-        "\n✅ Model saved successfully!"
+        f"Model saved at: {model_path}"
+    )
+
+    # =====================================================
+    # 19. TEST PREDICTION
+    # =====================================================
+
+    test_news = [
+        "The government announced a new policy after a cabinet meeting."
+    ]
+
+    prediction = best_model.predict(
+        test_news
+    )[0]
+
+    probability = best_model.predict_proba(
+        test_news
+    )[0]
+
+    confidence = max(probability) * 100
+
+    print("\n" + "=" * 60)
+    print("TEST PREDICTION")
+    print("=" * 60)
+
+    print(
+        "Prediction:",
+        prediction
     )
 
     print(
-        f"📁 {model_path}"
+        f"Confidence: {confidence:.2f}%"
     )
 
 
 # =========================================================
-# RUN TRAINING
+# RUN
 # =========================================================
 
 if __name__ == "__main__":
