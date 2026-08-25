@@ -64,3 +64,8 @@ Machine Learning Model
 REAL / FAKE Prediction
      ↓
 Confidence Score
+
+
+## 🚀 Live Demo
+
+[Click here to use the Fake News Detection App](https://fakenewsdetection-nsxsg6xavfqjcdazkhiwne.streamlit.app/)
