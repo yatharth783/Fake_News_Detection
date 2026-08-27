@@ -3,6 +3,10 @@
 An AI-powered Fake News Detection System that uses Natural Language Processing (NLP) and Machine Learning to classify news articles as **REAL** or **FAKE**.
 
 ---
+## 🚀 Live Demo
+
+🌐 **Streamlit App:**  
+https://fakenewsdetection-nsxsg6xavfqjcdazkhiwne.streamlit.app/
 
 ## 📌 Project Overview
 
@@ -65,6 +69,3 @@ REAL / FAKE Prediction
      ↓
 Confidence Score
 
-
-## 🚀 Live Demo
-[Click here to use the Fake News Detection App](https://fakenewsdetection-nsxsg6xavf.streamlit.app)
